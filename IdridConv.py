@@ -10,28 +10,16 @@ from torch.utils.data import Dataset, DataLoader
 class MyIdridNet(nn.Module):
     def __init__(self):
         super(MyIdridNet, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=3, padding=0,)
-        self.conv1str = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=3, padding=0, stride=2)
-        self.conv2 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=5, padding=0)
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=0)
-        self.maxpool1 = nn.MaxPool2d(2, 2)
-        self.maxpool2 = nn.MaxPool2d(2, 2)
-        self.deconv1 = nn.ConvTranspose2d()
-        self.deconv2 = nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=3, stride=2, padding=1)
-        self.lastconv = nn.Conv2d(in_channels=16, out_channels=1, kernel_size=1, padding=0)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=5, padding=2,)
+        self.conv2 = nn.Conv2d(in_channels=8, out_channels=1, kernel_size=3, padding=1)
+
 
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
-        x = F.relu(self.conv1str(x))
-        x = self.maxpool1(x)
         x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
-        x = self.maxpool2(x)
-        x = self.lastconv(x)
+        x = F.softmax(x, dim=1)
         return x
-
-
 
 
 
@@ -49,13 +37,14 @@ if __name__=='__main__':
     print(device)
     net.to(device)
 
-
-    training_data = MyIDRiDImageDataset(img_dir='data/training_set/',
-                                        labels_img_dir='data/disk_labels/')
+    training_data = MyIDRiDImageDataset(
+        img_dir='dataset/A. Segmentation/A. Segmentation/1. Original Images/a. Training Set',
+        labels_img_dir='dataset/A. Segmentation/A. Segmentation/2. All Segmentation Groundtruths/a. Training Set/5. Optic Disc',
+        resize=(256, 256))
 
     train_dataloader = DataLoader(training_data, batch_size=1, shuffle=False)
 
-    #criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=0.000001, momentum=0.9)
 
     for epoch in range(1):  # loop over the dataset multiple times
@@ -73,7 +62,8 @@ if __name__=='__main__':
             # forward + backward + optimize
             outputs = net(inputs.to(device))
             #print(f"Got output batch with shape: {outputs.size()}")
-            loss = torch.max(torch.abs(outputs-labels.to(device)))
+            #loss = torch.max(torch.abs(outputs-labels.to(device)))
+            loss = criterion(outputs.squeeze(), labels.to(device).squeeze())
             loss.backward()
             optimizer.step()
 

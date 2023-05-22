@@ -16,13 +16,15 @@ from torchvision.transforms import ToTensor
 
 
 class MyIDRiDImageDataset(Dataset):
-    def __init__(self, img_dir, labels_img_dir, transform=None, target_transform=None):
+    def __init__(self, img_dir, labels_img_dir, transform=None, target_transform=None, normalize=False, resize=None):
         self.labels_img_dir = labels_img_dir
         self.img_dir = img_dir
         self.all_images = os.listdir(self.img_dir)
         self.all_labels = os.listdir(self.labels_img_dir)
         self.transform = transform
         self.target_transform = target_transform
+        self.normalize = normalize
+        self.resize = resize
 
     def __len__(self):
         return len(self.all_images)
@@ -33,22 +35,31 @@ class MyIDRiDImageDataset(Dataset):
         imlabel = Image.open(os.path.join(self.labels_img_dir, self.all_labels[idx]))
         imlabel = ToTensor()(imlabel)
         imlabel.float()
-
         transform = transforms.Compose(
             [transforms.Normalize((0.0, 0.0, 0.0), (255, 255, 255))])
-        myLabelsTransform = transforms.Compose(
-            [transforms.Normalize(0.0, 0.0039215)])
+        if self.normalize:
+            for i in range(3):
+                image[i, :, :] = (image[i, :, :] - torch.mean(image, (1, 2), False)[i]) / (torch.max(image[i, :,:]) - torch.min(image[i, :, :]))
+        else:
+            image = transform(image)
 
-        image = transform(image)
-        imlabel = myLabelsTransform(imlabel)
+        if self.resize:
+            image = transforms.Resize(self.resize, antialias=True)(image)
+            imlabel = transforms.Resize(self.resize, antialias=True)(imlabel)
+
+        myLabelsTransform = transforms.Compose(
+            [transforms.Normalize(0, (imlabel.max() - imlabel.min()))])
+
+        imlabel = torch.round(myLabelsTransform(imlabel))
 
         return image, imlabel
 
 
 if __name__ == '__main__':
-
-    training_data = MyIDRiDImageDataset(img_dir='data/training_set/',
-                                        labels_img_dir='data/disk_labels/')
+    training_data = MyIDRiDImageDataset(
+        img_dir='dataset/A. Segmentation/A. Segmentation/1. Original Images/a. Training Set',
+        labels_img_dir='dataset/A. Segmentation/A. Segmentation/2. All Segmentation Groundtruths/a. Training Set/3. Hard Exudates',
+        )
 
     train_dataloader = DataLoader(training_data, batch_size=1, shuffle=True)
 
