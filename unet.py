@@ -24,20 +24,25 @@ if __name__ == '__main__':
 
     training_data = MyIDRiDImageDataset(img_dir='dataset/A. Segmentation/A. Segmentation/1. Original Images/a. Training Set',
                                         labels_img_dir='dataset/A. Segmentation/A. Segmentation/2. All Segmentation Groundtruths/a. Training Set/5. Optic Disc',
-                                        resize=(256, 256))
+                                        resize=(1024, 2048),
+                                        normalize=True)
+
+    learning_rate = 0.00001
+    momentum = 0.9
+    print("Learning rate: " + str(learning_rate) + " Momentum: " + str(momentum))
 
     train_dataloader = DataLoader(training_data, batch_size=1, shuffle=True)
 
     #criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
     lossfc = torch.nn.CrossEntropyLoss()
 
-    for epoch in range(3):  # loop over the dataset multiple times
+    for epoch in range(2):  # loop over the dataset multiple times
 
         running_loss = 0.000
-        for i, data in enumerate(train_dataloader, 0):
-            print(i)
-            print("----")
+        for i, data in enumerate(train_dataloader, 1):
+            #print(i)
+            #print("----")
             torch.cuda.empty_cache()
             # get the inputs
             inputs, labels = data
@@ -58,18 +63,19 @@ if __name__ == '__main__':
             # print statistics
             running_loss += loss.item()
             with torch.no_grad():
-                if i % 10 == 0:
-                    print(epoch + 1, i + 1, '  loss:  ', float(running_loss))
-
+                if i % 6 == 0:
+                    print(epoch + 1, i , '  loss:  ', float(running_loss/6))
+                    """
                     label = labels.squeeze()
                     outputs = outputs.squeeze()
                     plt.imshow(outputs)
                     plt.show()
                     plt.imshow(label)
                     plt.show()
+                    """
                     running_loss = 0.000
 
 
     print('Finished Training')
-    torch.save(model.state_dict(), 'saved_models/unet.pt')
+    torch.save(model.state_dict(), 'saved_models/unet4.pt')
     print('Model saved!')

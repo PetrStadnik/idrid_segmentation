@@ -16,15 +16,16 @@ from torchvision.transforms import ToTensor
 
 
 class MyIDRiDImageDataset(Dataset):
-    def __init__(self, img_dir, labels_img_dir, transform=None, target_transform=None, normalize=False, resize=None):
+    def __init__(self, img_dir, labels_img_dir, normalize=False, resize=None):
         self.labels_img_dir = labels_img_dir
         self.img_dir = img_dir
         self.all_images = os.listdir(self.img_dir)
         self.all_labels = os.listdir(self.labels_img_dir)
-        self.transform = transform
-        self.target_transform = target_transform
         self.normalize = normalize
         self.resize = resize
+
+    def window(self, image, size=1024):
+        ...
 
     def __len__(self):
         return len(self.all_images)
@@ -38,8 +39,12 @@ class MyIDRiDImageDataset(Dataset):
         transform = transforms.Compose(
             [transforms.Normalize((0.0, 0.0, 0.0), (255, 255, 255))])
         if self.normalize:
+            #image = transforms.Normalize(image.mean((1, 2)), image.std((1, 2)))(image)
+            #print(torch.min(image, dim=(1,2)))
+            #image = transforms.Normalize(image.min(dim=0), (image.max(dim=0) - image.min(dim=0)))(image)
+
             for i in range(3):
-                image[i, :, :] = (image[i, :, :] - torch.mean(image, (1, 2), False)[i]) / (torch.max(image[i, :,:]) - torch.min(image[i, :, :]))
+                image[i, :, :] = (image[i, :, :] - image[i,:,:].min()) / (torch.max(image[i, :,:]) - torch.min(image[i, :, :]))
         else:
             image = transform(image)
 
@@ -59,7 +64,7 @@ if __name__ == '__main__':
     training_data = MyIDRiDImageDataset(
         img_dir='dataset/A. Segmentation/A. Segmentation/1. Original Images/a. Training Set',
         labels_img_dir='dataset/A. Segmentation/A. Segmentation/2. All Segmentation Groundtruths/a. Training Set/3. Hard Exudates',
-        )
+        normalize=True)
 
     train_dataloader = DataLoader(training_data, batch_size=1, shuffle=True)
 
