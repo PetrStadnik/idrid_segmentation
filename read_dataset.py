@@ -23,12 +23,12 @@ class MyIDRiDImageDataset(Dataset):
         self.all_labels = os.listdir(self.labels_img_dir)
         self.normalize = normalize
         self.resize = resize
+        #print(len(self.all_images))
+        #print(len(self.all_labels))
 
-    def window(self, image, size=1024):
-        ...
 
     def __len__(self):
-        return len(self.all_images)
+        return len(self.all_labels)
 
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.all_images[idx])
@@ -52,10 +52,10 @@ class MyIDRiDImageDataset(Dataset):
             image = transforms.Resize(self.resize, antialias=True)(image)
             imlabel = transforms.Resize(self.resize, antialias=True)(imlabel)
 
-        myLabelsTransform = transforms.Compose(
-            [transforms.Normalize(0, (imlabel.max() - imlabel.min()))])
+        if (imlabel.max() - imlabel.min()) > 0:
+            imlabel = transforms.Normalize(0, (imlabel.max() - imlabel.min()))(imlabel)
 
-        imlabel = torch.round(myLabelsTransform(imlabel))
+        imlabel = torch.round(imlabel)
 
         return image, imlabel
 
@@ -63,14 +63,20 @@ class MyIDRiDImageDataset(Dataset):
 if __name__ == '__main__':
     training_data = MyIDRiDImageDataset(
         img_dir='dataset/A. Segmentation/A. Segmentation/1. Original Images/a. Training Set',
-        labels_img_dir='dataset/A. Segmentation/A. Segmentation/2. All Segmentation Groundtruths/a. Training Set/3. Hard Exudates',
+        labels_img_dir='dataset/A. Segmentation/A. Segmentation/2. All Segmentation Groundtruths/a. Training Set/2. Haemorrhages',
         normalize=True)
 
-    train_dataloader = DataLoader(training_data, batch_size=1, shuffle=True)
+    train_dataloader = DataLoader(training_data, batch_size=1, shuffle=False)
 
     print(training_data)
 
     train_features, train_labels = next(iter(train_dataloader))
+
+    transformer = transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=.02)
+    transformed_img = transformer(train_features.squeeze())
+    plt.imshow(transformed_img.permute(1,2,0))
+    plt.show()
+"""
     print(train_labels.max())
     print(train_labels.min())
     print(f"Feature batch shape: {train_features.size()}")
@@ -83,3 +89,13 @@ if __name__ == '__main__':
     plt.show()
     plt.imshow(label)
     plt.show()
+"""
+
+"""
+    for i, data in enumerate(train_dataloader, 1):
+        img, lab = data
+        print(i)
+        print(lab.max())
+        print(lab.min())
+"""
+

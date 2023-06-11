@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
 
     model = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
-                           in_channels=3, out_channels=1, init_features=32, pretrained=False)
+                           in_channels=3, out_channels=1, init_features=64, pretrained=False)
 
     print("Hello to my sliding window :-)")
 
@@ -27,7 +27,7 @@ if __name__ == '__main__':
                                         resize=None,
                                         normalize=True)
 
-    learning_rate = 0.00001
+    learning_rate = 0.0000001
     momentum = 0.9
     win_size = 1024
 
@@ -35,22 +35,21 @@ if __name__ == '__main__':
 
     train_dataloader = DataLoader(training_data, batch_size=1, shuffle=True)
 
-    #criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
     lossfc = torch.nn.CrossEntropyLoss()
 
     d = 0
 
-    for epoch in range(2):  # loop over the dataset multiple times
+    for epoch in range(8):  # loop over the dataset multiple times
 
         running_loss = 0.000
         for i, data in enumerate(train_dataloader, 1):
             torch.cuda.empty_cache()
             inputs, labels = data
-            for sw in range(11):
-                for sh in range(20):
-                    winput = inputs[:, :, sh*96:sh*96+win_size, sw*224:sw*224+win_size*2]
-                    wlabel = labels[:, :, sh*96:sh*96+win_size, sw*224:sw*224+win_size*2]
+            for sw in range(4):
+                for sh in range(3):
+                    winput = inputs[:, :, 20*sh*32:20*sh*32+win_size, 11*sw*56:11*sw*56+win_size*2]
+                    wlabel = labels[:, :, 20*sh*32:20*sh*32+win_size, 11*sw*56:11*sw*56+win_size*2]
                     optimizer.zero_grad()
                     outputs = model(winput.to(device))
                     loss = lossfc(outputs.squeeze(), wlabel.to(device).squeeze())
@@ -60,15 +59,15 @@ if __name__ == '__main__':
                     d += 1
                     with torch.no_grad():
                         if d % 10 == 0:
-                            print(epoch + 1, i, '  loss:  ', float(running_loss/10))
-                            """
+                            print(epoch + 1, i, '  loss:  ', float(running_loss/100))
+
                             label = labels.squeeze()
                             outputs = outputs.squeeze()
                             plt.imshow(outputs)
                             plt.show()
                             plt.imshow(label)
                             plt.show()
-                            """
+
                             running_loss = 0.000
 
 

@@ -1,21 +1,55 @@
 import sys
+
+import numpy
 from torchvision.utils import save_image
 import torch
 from torch.utils.data import DataLoader
 
 from IdridConv import MyIdridNet
 from read_dataset import MyIDRiDImageDataset
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 
 
-t = 0.9
+
 net = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
                            in_channels=3, out_channels=1, init_features=32, pretrained=False)
 
 
 if __name__=='__main__':
     print("Hello in testing :-)")
+    le = torch.load('les/le4.pt').numpy()
+    plt.plot(le[-322:])
+    plt.ylabel('Loss Error')
+    plt.show()
+    print(le.size)
+    a = numpy.zeros(5)
+    b = numpy.zeros(5)
+    c = numpy.zeros(5)
+    d = numpy.zeros(5)
+    e = numpy.zeros(5)
+    for t in range(5):
+        a[t-5] = numpy.mean(le[324*t:324*(t+1)]-1)
+    plt.plot([1, 2, 3, 4, 5], a, label='lr = 0.000001')
+    for t in range(5,10):
+        b[t-5] = numpy.mean(le[324*t:324*(t+1)]-1)
+    plt.plot([1, 2, 3, 4, 5], b, label='lr = 0.00001')
+    for t in range(10,15):
+        c[t-10] = numpy.mean(le[324*t:324*(t+1)]-1)
+    plt.plot([1, 2, 3, 4, 5], c, label='lr = 0.0001')
+    for t in range(15,20):
+        d[t-15] = numpy.mean(le[324*t:324*(t+1)]-1)
+    plt.plot([1, 2, 3, 4, 5], d, label='lr = 0.001')
+    for t in range(20,25):
+        e[t-20] = numpy.mean(le[324*t:324*(t+1)]-1)
+    plt.plot([1, 2, 3, 4, 5], e, label='lr = 0.01')
+
+    plt.ylabel('Average Loss Error')
+    plt.title('Error loss through epochs')
+    plt.legend()
+    plt.show()
+
+
     #net = MyIdridNet()
 
     if torch.cuda.is_available():
@@ -27,14 +61,14 @@ if __name__=='__main__':
     net.to(device)
 
     #net = MyIdridNet()
-    net.load_state_dict(torch.load('saved_models/unet4.pt', map_location=device))
+    net.load_state_dict(torch.load('saved_models/unetaug1.pt', map_location=device))
     net.eval()
     net.to(device)
 
 
     testing_data = MyIDRiDImageDataset(
         img_dir='dataset/A. Segmentation/A. Segmentation/1. Original Images/b. Testing Set',
-        labels_img_dir='dataset/A. Segmentation/A. Segmentation/2. All Segmentation Groundtruths/b. Testing Set/5. Optic Disc',
+        labels_img_dir='dataset/A. Segmentation/A. Segmentation/2. All Segmentation Groundtruths/b. Testing Set/3. Hard Exudates',
         resize=(1024, 1024),
         normalize=True)
 
@@ -43,6 +77,7 @@ if __name__=='__main__':
     total_green = 0
     total_wrong = 0
 
+    t = 0.93
     for i, data in enumerate(test_dataloader, 55):
         # get the inputs
         inputs, labels = data
@@ -61,7 +96,7 @@ if __name__=='__main__':
 
         #outcol = transforms.Resize((2848, 4288), antialias=True)(outcol)
 
-        save_image(torch.round(outcol), 'saved_images/unet4/'+str(i)+'_out.png')
+        save_image(torch.round(outcol), 'saved_images/unetaug1/'+str(i)+'_out.png')
         #torch.save(out, 'saved_images/'+str(i)+'_out.pt')
         print(str(i) + " Error: " + str(error.item()) + "%")
 
